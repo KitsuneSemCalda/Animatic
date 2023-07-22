@@ -18,6 +18,20 @@ type Config struct {
   englishSearch bool
 }
 
+// Define getter methods
+func (c *Config) ParallelValue() int {
+	return c.parallelValue
+}
+
+func (c *Config) PortugueseSearch() bool {
+	return c.portugueseSearch
+}
+
+func (c *Config) EnglishSearch() bool {
+	return c.englishSearch
+}
+
+// Create a Exporter Function
 func writeConfigToFile(file *os.File, config *Config) error {
 	writer := bufio.NewWriter(file)
 
@@ -46,6 +60,7 @@ func writeConfigToFile(file *os.File, config *Config) error {
 	return nil
 }
 
+// Create a importer Function
 func LoadConfig(path string) (*Config, error) {
 	Configpath := filepath.Join(path, "settings.txt")
 
