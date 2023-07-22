@@ -1,21 +1,21 @@
 package main
 
 import (
+	"Animatic/config"
 	"fmt"
 	"os"
-
 )
 
-func loadcfg(configPath string){
-  _, exists := os.Stat(configPath)
+func getFolder() string {
+	userHomeDir, err := os.UserHomeDir()
+	if err != nil {
+		fmt.Println("Erro ao obter o diretório do usuário:", err)
+		return ""
+	}
 
-  if os.IsExist(exists){
-
-  }else{
-    fmt.Printf("O arquivo de configuração não existe em: %s\n", configPath)
-  }
+	return fmt.Sprintf("%s/.local/Animatic", userHomeDir)
 }
 
-func main(){
-  loadcfg("~/.local/share/animatics/config.cfg")
+func main() {
+	config.LoadConfig(getFolder())
 }
