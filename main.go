@@ -17,5 +17,5 @@ func getFolder() string {
 }
 
 func main() {
-	config.LoadConfig(getFolder())
+  loadedConfig, _ := config.LoadConfig(getFolder())
 }
