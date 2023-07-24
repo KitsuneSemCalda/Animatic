@@ -2,6 +2,7 @@ package main
 
 import (
 	"Animatic/config"
+  "Animatic/downloadAnime"
 	"fmt"
 	"os"
   "strings"
@@ -34,7 +35,13 @@ func getFolder() string {
 }
 
 func main() {
-  config.LoadConfig(getFolder())
+  loadedConfig, err := config.LoadConfig(getFolder())
+  
+  if (err != nil){
+    fmt.Printf("Ocorreu um erro: %v\n", err)
+    os.Exit(1)
+  }
+
   p := promptui.Select{
 		Label: "Escolha uma opção:",
 		Items: []string{string(optionDownload), string(optionWatch)},
@@ -51,7 +58,26 @@ func main() {
 	}
   
   if (m.selectedOption == optionDownload){
-	  action = "baixado"
+	  p = promptui.Select{
+      Label: "Você pretende baixar um episódio ou todos eles",
+      Items: []string{"Baixar um episódio em especifico", "Baixar todos eles"},
+    }
+    
+    _, option ,err = p.Run()
+
+    if err != nil{
+      fmt.Printf("Error: %v\n", err)
+		  os.Exit(1)
+    }
+      
+    if (option == "Baixar um episódio em especifico"){
+      fmt.Println("Mostrar lista de opções")
+    }
+
+    if (option == "Baixar todos os episódios"){
+      fmt.Println("começar download paralelo")
+    }
+
   }else{
     action = "assistido"
   }
@@ -59,6 +85,7 @@ func main() {
   prompt := promptui.Prompt{
 		Label: fmt.Sprintf("Digite o nome do anime a ser %s", action),
 	}
+
 	animeName, err := prompt.Run()
 	if err != nil {
 		fmt.Printf("Error: %v\n", err)
@@ -66,6 +93,10 @@ func main() {
 	}
 
 	m.animeName = strings.TrimSpace(animeName)
-  fmt.Println(m.animeName)
+
+  if (m.selectedOption == optionDownload && loadedConfig.PortugueseSearch()){
+    downloadanime.SearchAnimeSitePtBr(m.animeName)
+  }
+
 	os.Exit(0)
 }
