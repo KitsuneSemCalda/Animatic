@@ -2,11 +2,12 @@ package main
 
 import (
 	"Animatic/config"
-  "Animatic/utils"
+	downloadanime "Animatic/downloadAnime"
+	"Animatic/utils"
 	"fmt"
 	"os"
 
-  "github.com/manifoldco/promptui"
+	"github.com/manifoldco/promptui"
 )
 
 type model struct {
@@ -44,7 +45,7 @@ func main() {
   
   if loadedConfig.DownloadAll(){
     if loadedConfig.PortugueseSearch() {
-      fmt.Println(animeName)
+      downloadanime.SelectAnime(animeName)
     }
   }
 
