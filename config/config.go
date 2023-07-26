@@ -1,26 +1,39 @@
 package config
 
 import (
+	"Animatic/utils"
 	"bufio"
 	"fmt"
-  "path/filepath"
+	"log"
 	"os"
-  "runtime"
+	"path/filepath"
 	"strconv"
 	"strings"
 
-  "golang.org/x/text/language"
+	"golang.org/x/text/language"
 )
 
 type Config struct {
-  parallelValue int
+  downloadPath string
   portugueseSearch bool
   englishSearch bool
+  downloadAll bool
 }
 
+// Define a constructor
+
+func NewConfig(portugueseSearch, englishSearch, downloadAll bool, downloadPath string) *Config {
+	return &Config{
+		portugueseSearch: portugueseSearch,
+		englishSearch:    englishSearch,
+		downloadAll:       downloadAll,
+    downloadPath: downloadPath,
+	}
+}
 // Define getter methods
-func (c *Config) ParallelValue() int {
-	return c.parallelValue
+
+func (c *Config) DownloadPath() string{
+  return c.downloadPath
 }
 
 func (c *Config) PortugueseSearch() bool {
@@ -31,22 +44,36 @@ func (c *Config) EnglishSearch() bool {
 	return c.englishSearch
 }
 
+func (c *Config) DownloadAll() bool {
+  return c.downloadAll
+}
+
+func GetPathSettings() string {
+  userHomeDir, err := os.UserHomeDir()
+  if err != nil {
+    log.Fatalf("Error in push user directory: %v\n", err)
+    return ""
+  }
+
+  return filepath.Join(userHomeDir, ".local/Animatic")
+}
+
 // Create a Exporter Function
 func writeConfigToFile(file *os.File, config *Config) error {
 	writer := bufio.NewWriter(file)
 
-	_, err := fmt.Fprintf(writer, "parallelValue: %d\n", config.parallelValue)
-
-	if err != nil {
-		return err
-	}
-
-	_, err = fmt.Fprintf(writer, "portugueseSearch: %v\n", config.portugueseSearch)
+  _, err := fmt.Fprintf(writer, "portugueseSearch: %v\n", config.portugueseSearch)
 
 	if err != nil {
 		return err
 	}
 	_, err = fmt.Fprintf(writer, "englishSearch: %v\n", config.englishSearch)
+  
+  if err != nil {
+    return err
+  }
+
+  _, err = fmt.Fprintf(writer, "downloadPath: %v\n", config.downloadPath)
 
 	if err != nil {
 		return err
@@ -86,12 +113,6 @@ func LoadConfig(path string) (*Config, error) {
 			value := strings.TrimSpace(parts[1])
 
 			switch key {
-			case "parallelValue":
-				val, err := strconv.Atoi(value)
-				if err != nil {
-					return nil, fmt.Errorf("error parsing parallelValue: %v", err)
-				}
-				config.parallelValue = val
 			case "portugueseSearch":
 				bval, err := strconv.ParseBool(value)
 				if err != nil {
@@ -136,13 +157,12 @@ func LoadConfig(path string) (*Config, error) {
 		tag, _ := language.MatchStrings(matcher, locale.String())
 		portugueseSearch := tag == language.BrazilianPortuguese || tag == language.EuropeanPortuguese
     
-    numCores := runtime.NumCPU() / 2
-    
 		// Populate the default configuration values based on the locale and pc Power.
 		defaultConfig := &Config{
-			parallelValue:   numCores,
 			portugueseSearch: portugueseSearch,
 			englishSearch:    !portugueseSearch,
+      downloadAll: true,
+      downloadPath:  filepath.Join(utils.GetFolder(), "downloads/animes/"),
 		}
 
 		// Write the default configuration to the new file.
