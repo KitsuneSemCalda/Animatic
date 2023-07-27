@@ -1,15 +1,26 @@
 package utils
 
-import(
-  "regexp"
-  "strings"
-  "path/filepath"
-  "os/user"
-  "log"
+import (
+	"log"
+	"os/user"
+	"path/filepath"
+	"regexp"
+	"strings"
 )
 
+func NameTreating(str string) string {
+  regexdName := DatabaseFormatter(str)
+  return TreatingAnimeName(regexdName)
+}
+
+func EpisodeFormatter(str string) string {
+	regex := regexp.MustCompile(`\d+$`)
+  result := regex.FindString(str)
+	return result
+}
+
 func DatabaseFormatter(str string) string {
-	regex := regexp.MustCompile(`\s*\([^)]*\)|\bn/a\b|\s+\d+(\.\d+)?$`)
+	regex := regexp.MustCompile(`\s+(\d+(\.\d+)?)`)
 	result := regex.ReplaceAllString(str, "")
 	result = strings.TrimSpace(result)
 	result = strings.ToLower(result)
@@ -37,5 +48,5 @@ func GetFolder() string{
 	if err != nil {
 		log.Fatalf("Failed to get current user: %v", err)
 	}
-  return filepath.Join(currentUser.HomeDir, "/.local/Animatic")
+  return filepath.Join(currentUser.HomeDir, "/Vídeos/Animatics")
 }

@@ -79,6 +79,12 @@ func writeConfigToFile(file *os.File, config *Config) error {
 		return err
 	}
 
+  _, err = fmt.Fprintf(writer, "downloadAll : %v\n", config.downloadAll)
+
+  if err != nil {
+    return err
+  }
+
 	err = writer.Flush() // Flush the buffered writer to ensure data is written to the file.
 	if err != nil {
 		return err
@@ -125,6 +131,12 @@ func LoadConfig(path string) (*Config, error) {
 					return nil, fmt.Errorf("error parsing englishSearch: %v", err)
 				}
 				config.englishSearch = bval
+      case "downloadAll":
+        bval, err := strconv.ParseBool(value)
+        if err != nil {
+          return nil, fmt.Errorf("error parsing downloadAll: %v", err)
+        }
+        config.downloadAll = bval
 			}
 		}
 
