@@ -12,6 +12,7 @@ import (
 	"path/filepath"
 	"strings"
 	"sync"
+  "time"
 
 	"github.com/PuerkitoBio/goquery"
 	"github.com/cavaliergopher/grab/v3"
@@ -29,50 +30,45 @@ func DownloadVideo(db *sql.DB, destPath string, url string, animeName string, ep
 		return
 	}
 
+	// Create a new grab client
 	client := grab.NewClient()
 
+	// Create the request to download the file
 	req, err := grab.NewRequest(destPath, url)
 	if err != nil {
 		fmt.Printf("Error creating request: %v\n", err)
 		return
 	}
 
-	// Create a channel to receive updates on download progress
-	progressChan := make(chan *grab.Response)
+	var resp *grab.Response
+	retries := 3
+	delay := time.Second * 30 // 30 seconds delay between retries
 
-	// Perform the download in a separate goroutine
-	resp := client.Do(req)
+	for i := 0; i < retries; i++ {
+		// Start the download
+		resp = client.Do(req)
 
-	// Create a WaitGroup to wait for the download to complete
-	var wg sync.WaitGroup
-	wg.Add(1)
+		// Wait for the download to complete and get the response
+		<-resp.Done
 
-	// Start a goroutine to monitor the download progress
-	go func() {
-		defer wg.Done()
-
-		// Loop to receive progress updates until the download is complete
-		for !resp.IsComplete() {
-			select {
-			case <-progressChan:
-				// Update progress if needed
+		// Check for any download errors
+		if resp.Err() != nil {
+			if resp.HTTPResponse != nil && resp.HTTPResponse.StatusCode == 429 {
+				fmt.Printf("Too many requests. Retrying in %v...\n", delay)
+				time.Sleep(delay)
+				continue // Retry the download
 			}
+			fmt.Printf("Error downloading: %v\n", resp.Err())
+			return
 		}
-	}()
 
-	// Wait for the download to complete
-	wg.Wait()
-
-	// Check for any download errors
-	if resp.Err() != nil {
-		fmt.Printf("Error downloading: %v\n", resp.Err())
-		return
+		// Download successful, break the retry loop
+		break
 	}
 
 	// The file is downloaded successfully, so you can proceed with further actions
 	fmt.Printf("Episode %s of anime %s was downloaded to %s\n", episode, animeName, destPath)
 }
-
 
 func extractVideoUrl(url string) (string, error){
   response, err := http.Get(url)
