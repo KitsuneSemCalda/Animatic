@@ -22,24 +22,55 @@ var mw sync.WaitGroup
 
 const BaseAnimeUrlPtBr string = "https://animefire.net"
 
-func DownloadVideo(db *sql.DB,destPath string, url string, animeName string, episode string) {
-  err := utils.AddAnimeToTB(db, animeName, episode, destPath)
+func DownloadVideo(db *sql.DB, destPath string, url string, animeName string, episode string) {
+	err := utils.AddAnimeToTB(db, animeName, episode, destPath)
+	if err != nil {
+		fmt.Printf("Error input animeInfo: %v\n", err)
+		return
+	}
 
-  if err != nil {
-    fmt.Printf("Error input animeInfo: %v\n", err)
-  }
+	client := grab.NewClient()
 
-  client := grab.NewClient()
-	
-  req, err := grab.NewRequest(destPath, url)
+	req, err := grab.NewRequest(destPath, url)
 	if err != nil {
 		fmt.Printf("Error creating request: %v\n", err)
 		return
-  }
+	}
 
- client.Do(req)
- 
- fmt.Printf("episodio %s do anime %s foi baixado em %s \n", episode, animeName, destPath)
+	// Create a channel to receive updates on download progress
+	progressChan := make(chan *grab.Response)
+
+	// Perform the download in a separate goroutine
+	resp := client.Do(req)
+
+	// Create a WaitGroup to wait for the download to complete
+	var wg sync.WaitGroup
+	wg.Add(1)
+
+	// Start a goroutine to monitor the download progress
+	go func() {
+		defer wg.Done()
+
+		// Loop to receive progress updates until the download is complete
+		for !resp.IsComplete() {
+			select {
+			case <-progressChan:
+				// Update progress if needed
+			}
+		}
+	}()
+
+	// Wait for the download to complete
+	wg.Wait()
+
+	// Check for any download errors
+	if resp.Err() != nil {
+		fmt.Printf("Error downloading: %v\n", resp.Err())
+		return
+	}
+
+	// The file is downloaded successfully, so you can proceed with further actions
+	fmt.Printf("Episode %s of anime %s was downloaded to %s\n", episode, animeName, destPath)
 }
 
 
@@ -242,7 +273,9 @@ func SelectAnime(db *sql.DB,animeName string){
     os.Exit(1)
   }
   
-  destPath := filepath.Join(utils.GetFolder(), "downloads/anime")
+  treatedName := utils.DatabaseFormatter(SelectedAnime.Name)
+  destPath := filepath.Join(utils.GetFolder(), "anime", treatedName)
+  fmt.Println(destPath)
 
   epList , err := getAnimeEpisodes(animeUrl)
 
