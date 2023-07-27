@@ -48,5 +48,5 @@ func GetFolder() string{
 	if err != nil {
 		log.Fatalf("Failed to get current user: %v", err)
 	}
-  return filepath.Join(currentUser.HomeDir, "Animatics")
+  return filepath.Join(currentUser.HomeDir, "/Vídeos/Animatics")
 }
