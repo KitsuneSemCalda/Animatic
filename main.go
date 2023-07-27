@@ -29,9 +29,17 @@ func main() {
   loadedConfig, err := config.LoadConfig(utils.GetFolder())
   
   if (err != nil){
-    fmt.Printf("Ocorreu um erro: %v\n", err)
+    fmt.Printf("Ocorreu um erro ao carregar as configurações: %v\n", err)
     os.Exit(1)
   }
+
+  db, err := utils.InitializeDB()
+
+  if (err != nil){
+    fmt.Printf("Ocorreu um erro em abrir o banco de dados: %v\n", err)
+  }
+
+  defer db.Close()
 
   prompt := promptui.Prompt{
 		Label: fmt.Sprintf("Digite o nome do anime a ser %s", action),
@@ -45,7 +53,7 @@ func main() {
   
   if loadedConfig.DownloadAll(){
     if loadedConfig.PortugueseSearch() {
-      downloadanime.SelectAnime(animeName)
+      downloadanime.SelectAnime(db, animeName)
     }
   }
 
