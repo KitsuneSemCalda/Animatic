@@ -1,11 +1,11 @@
 package utils
 
-import(
-  "regexp"
-  "strings"
-  "path/filepath"
-  "os/user"
-  "log"
+import (
+	"log"
+	"os/user"
+	"path/filepath"
+	"regexp"
+	"strings"
 )
 
 func NameTreating(str string) string {
@@ -48,5 +48,5 @@ func GetFolder() string{
 	if err != nil {
 		log.Fatalf("Failed to get current user: %v", err)
 	}
-  return filepath.Join(currentUser.HomeDir, "/.local/Animatic")
+  return filepath.Join(currentUser.HomeDir, "Animatics")
 }
