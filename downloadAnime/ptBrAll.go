@@ -41,8 +41,8 @@ func DownloadVideo(db *sql.DB, destPath string, url string, animeName string, ep
 	}
 
 	var resp *grab.Response
-	retries := 3
-	delay := time.Second * 30 // 30 seconds delay between retries
+	retries := 150
+	delay := time.Second * 5 // 5 seconds delay between retries
 
 	for i := 0; i < retries; i++ {
 		// Start the download
