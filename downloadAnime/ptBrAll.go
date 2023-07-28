@@ -3,7 +3,7 @@ package downloadanime
 import (
 	"Animatic/utils"
 	"database/sql"
-	"encoding/json"
+  "encoding/json"
 	"fmt"
 	"io/ioutil"
 	"log"
@@ -11,63 +11,50 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
-	"sync"
-  "time"
-
-	"github.com/PuerkitoBio/goquery"
+	
+  "github.com/PuerkitoBio/goquery"
 	"github.com/cavaliergopher/grab/v3"
 	"github.com/manifoldco/promptui"
 )
 
-var mw sync.WaitGroup
-
 const BaseAnimeUrlPtBr string = "https://animefire.net"
+const SeasonFolderName = "Season 01"
 
-func DownloadVideo(db *sql.DB, destPath string, url string, animeName string, episode string) {
+func DownloadVideo(db *sql.DB, destPath string, url string, animeName string, episode string) error {
+	episode = utils.EpisodeFormatter(episode)
+
 	err := utils.AddAnimeToTB(db, animeName, episode, destPath)
 	if err != nil {
 		fmt.Printf("Error input animeInfo: %v\n", err)
-		return
 	}
+  
+  fmt.Printf("Download the anime %s Episode %s\n", animeName, episode)
 
-	// Create a new grab client
 	client := grab.NewClient()
 
-	// Create the request to download the file
-	req, err := grab.NewRequest(destPath, url)
-	if err != nil {
-		fmt.Printf("Error creating request: %v\n", err)
-		return
+	req, _ := grab.NewRequest(destPath, url)
+	resp := client.Do(req)
+
+	// Wait for the download to complete
+	<-resp.Done
+
+	if err := resp.Err(); err != nil {
+		fmt.Printf("Error downloading episode: %v\n", err)
+		return err
 	}
 
-	var resp *grab.Response
-	retries := 150
-	delay := time.Second * 5 // 5 seconds delay between retries
+	// Move the downloaded episode to the anime folder
+	episodeNumber := utils.EpisodeFormatter(episode)
+	episodeFilename := fmt.Sprintf("S01E%s.mp4", episodeNumber)
+	newEpisodePath := filepath.Join(destPath, SeasonFolderName, episodeFilename)
 
-	for i := 0; i < retries; i++ {
-		// Start the download
-		resp = client.Do(req)
-
-		// Wait for the download to complete and get the response
-		<-resp.Done
-
-		// Check for any download errors
-		if resp.Err() != nil {
-			if resp.HTTPResponse != nil && resp.HTTPResponse.StatusCode == 429 {
-				fmt.Printf("Too many requests. Retrying in %v...\n", delay)
-				time.Sleep(delay)
-				continue // Retry the download
-			}
-			fmt.Printf("Error downloading: %v\n", resp.Err())
-			return
-		}
-
-		// Download successful, break the retry loop
-		break
+	if err := os.Rename(resp.Filename, newEpisodePath); err != nil {
+		fmt.Printf("Error moving episode to anime folder: %v\n", err)
+		return err
 	}
 
-	// The file is downloaded successfully, so you can proceed with further actions
-	fmt.Printf("Episode %s of anime %s was downloaded to %s\n", episode, animeName, destPath)
+	fmt.Printf("Episode %s of anime %s was downloaded to %s\n", episode, animeName, newEpisodePath)
+	return nil
 }
 
 func extractVideoUrl(url string) (string, error){
@@ -124,28 +111,32 @@ func extractActualVideoURL(videoSrc string) (string, error) {
 	return videoResponse.Data[0].Src, nil
 }
 
+// Modify the `downloadAll` function to use the Plex naming convention
+func downloadAll(db *sql.DB, destPath string, anime Anime, epList []Episode) {
+	animeName := utils.TreatingAnimeName(anime.Name)
+	animeFolder := filepath.Join(destPath, animeName)
 
-func downloadAll(db *sql.DB,destPath string, anime Anime ,epList []Episode){
-  for i := range epList{
-    episodePath := filepath.Join(destPath, epList[i].Number + ".mp4")
-    animeUrl := epList[i].URL
-    videoUrl, err := extractVideoUrl(animeUrl)
-    if err != nil{
-      log.Fatalf("Failed to extract video URL: %v", err)
-    }
-    
-    videoUrl, err = extractActualVideoURL(videoUrl)
-    
-    if err != nil {
-      log.Fatal("Failed to extract the api")
-    }
+	for i := range epList {
+		episodeNumber := utils.EpisodeFormatter(epList[i].Number)
+		episodePath := filepath.Join(animeFolder, fmt.Sprintf("S01E%s.mp4", episodeNumber))
 
-    go DownloadVideo(db, episodePath, videoUrl, anime.Name, epList[i].Number)
+		animeURL := epList[i].URL
+		videoURL, err := extractVideoUrl(animeURL)
+		if err != nil {
+			log.Fatalf("Failed to extract video URL: %v", err)
+		}
 
-    if err != nil{
-      log.Fatal("Failed to download episode")
-    }
-  }
+		videoURL, err = extractActualVideoURL(videoURL)
+		if err != nil {
+			log.Fatal("Failed to extract the api")
+		}
+
+		DownloadVideo(db, episodePath, videoURL, anime.Name, epList[i].Number)
+
+		if err != nil {
+			log.Fatal("Failed to download episode")
+		}
+	}
 }
 
 func getAnimeEpisodes(animeURL string) ([]Episode, error) {
@@ -208,6 +199,27 @@ func selectAnime(animes []Anime) int {
 	return index
 }
 
+// Add more error handling in the `SelectAnime` function
+func SelectAnime(db *sql.DB, animeName string) {
+	animeName = utils.TreatingAnimeName(animeName)
+	animeURL, animeSelectedName, err := searchAnime(animeName)
+
+	if err != nil {
+		log.Fatalf("Failed to locate anime: %v\n", err)
+		os.Exit(1)
+	}
+
+	destPath := filepath.Join(utils.GetFolder(), "Anime")
+
+	epList, err := getAnimeEpisodes(animeURL)
+
+	if err != nil {
+		log.Fatalf("Failed to get anime episodes: %v\n", err)
+	}
+
+	downloadAll(db, destPath, Anime{Name: animeSelectedName, URL: animeURL}, epList)
+}
+
 func searchAnime(animeName string) (string, string ,error){
   currentPageUrl := fmt.Sprintf("%s/pesquisar/%s", BaseAnimeUrlPtBr, animeName)
 
@@ -258,26 +270,3 @@ func searchAnime(animeName string) (string, string ,error){
 	}
 }
 
-func SelectAnime(db *sql.DB,animeName string){
-  animeName = utils.TreatingAnimeName(animeName)
-  animeUrl, animeSelectedName , err := searchAnime(animeName)
-  
-  SelectedAnime := Anime{Name: animeSelectedName, URL: animeUrl}
-
-  if err != nil{
-    log.Fatalf("Failed to locale anime: %v\n", err)
-    os.Exit(1)
-  }
-  
-  treatedName := utils.DatabaseFormatter(SelectedAnime.Name)
-  destPath := filepath.Join(utils.GetFolder(), "anime", treatedName)
-  fmt.Println(destPath)
-
-  epList , err := getAnimeEpisodes(animeUrl)
-
-  if err != nil{
-    log.Fatalf("Failed to get animes episodes: %v\n", err)
-  }
-  
-  downloadAll(db, destPath, SelectedAnime ,epList)
-}
