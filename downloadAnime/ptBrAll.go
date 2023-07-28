@@ -21,12 +21,14 @@ const BaseAnimeUrlPtBr string = "https://animefire.net"
 
 func DownloadVideo(db *sql.DB, destPath string, url string, animeName string, episode string) error {
 	episode = utils.EpisodeFormatter(episode)
+	episodeFilename := fmt.Sprintf("S01E%s.mp4", episode)
 
 	err := utils.AddAnimeToTB(db, animeName, episode, destPath)
 	if err != nil {
 		fmt.Printf("Error input animeInfo: %v\n", err)
 	}
   
+  destPath = filepath.Join(destPath, episodeFilename)
   fmt.Printf("Download the anime %s Episode %s\n", animeName, episode)
 
 	client := grab.NewClient()
@@ -42,17 +44,7 @@ func DownloadVideo(db *sql.DB, destPath string, url string, animeName string, ep
 		return err
 	}
 
-	// Move the downloaded episode to the anime folder
-	episodeNumber := utils.EpisodeFormatter(episode)
-	episodeFilename := fmt.Sprintf("S01E%s.mp4", episodeNumber)
-	newEpisodePath := filepath.Join(destPath, episodeFilename)
-
-	if err := os.Rename(resp.Filename, newEpisodePath); err != nil {
-		fmt.Printf("Error moving episode to anime folder: %v\n", err)
-		return err
-	}
-
-	fmt.Printf("Episode %s of anime %s was downloaded to %s\n", episode, animeName, newEpisodePath)
+		fmt.Printf("Episode %s of anime %s was downloaded to %s\n", episode, animeName, destPath)
 	return nil
 }
 
