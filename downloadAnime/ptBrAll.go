@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+  "strconv"
 	"strings"
 	
   "github.com/PuerkitoBio/goquery"
@@ -121,9 +122,13 @@ func downloadAll(db *sql.DB, destPath string, anime Anime, epList []Episode) {
 		if err != nil {
 			log.Fatal("Failed to extract the api")
 		}
-
-		DownloadVideo(db, episodePath, videoURL, anime.Name, epList[i].Number)
-
+    
+    value, _ := strconv.Atoi(epList[i].Number)
+    if (value >= 0){
+		  DownloadVideo(db, episodePath, videoURL, anime.Name, epList[i].Number)
+    }else{
+      DownloadVideo(db, episodePath, videoURL, anime.Name, "0")
+    }
 		if err != nil {
 			log.Fatal("Failed to download episode")
 		}
