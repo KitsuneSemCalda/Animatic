@@ -11,18 +11,8 @@ import (
 )
 
 type model struct {
-	selectedOption optionMsg
 	animeName      string
 }
-
-type optionMsg string
-
-var action string
-
-const (
-	optionDownload optionMsg = "Baixar Anime"
-	optionWatch    optionMsg = "Assistir Anime"
-)
 
 
 func main() {
@@ -42,7 +32,7 @@ func main() {
   defer db.Close()
 
   prompt := promptui.Prompt{
-		Label: fmt.Sprintf("Digite o nome do anime a ser %s", action),
+		Label: fmt.Sprintf("Digite o nome do anime a ser %s", "baixado"),
 	}
 
 	animeName, err := prompt.Run()
