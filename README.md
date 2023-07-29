@@ -34,7 +34,7 @@ cd Animatic
 3. Build the executable
 
 ```bash
-go build && sudo mv main /usr/bin/Animatic
+go build && sudo mv Animatic /usr/bin/Animatic
 ```
 
 or 
