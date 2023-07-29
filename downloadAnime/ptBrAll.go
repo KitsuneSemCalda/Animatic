@@ -10,6 +10,7 @@ import (
 	"net/http"
 	"os"
 	"path/filepath"
+  "strconv"
 	"strings"
 	
   "github.com/PuerkitoBio/goquery"
@@ -18,16 +19,17 @@ import (
 )
 
 const BaseAnimeUrlPtBr string = "https://animefire.net"
-const SeasonFolderName = "Season 01"
 
 func DownloadVideo(db *sql.DB, destPath string, url string, animeName string, episode string) error {
 	episode = utils.EpisodeFormatter(episode)
+	episodeFilename := fmt.Sprintf("S01E%s.mp4", episode)
 
 	err := utils.AddAnimeToTB(db, animeName, episode, destPath)
 	if err != nil {
 		fmt.Printf("Error input animeInfo: %v\n", err)
 	}
   
+  destPath = filepath.Join(destPath, episodeFilename)
   fmt.Printf("Download the anime %s Episode %s\n", animeName, episode)
 
 	client := grab.NewClient()
@@ -43,17 +45,7 @@ func DownloadVideo(db *sql.DB, destPath string, url string, animeName string, ep
 		return err
 	}
 
-	// Move the downloaded episode to the anime folder
-	episodeNumber := utils.EpisodeFormatter(episode)
-	episodeFilename := fmt.Sprintf("S01E%s.mp4", episodeNumber)
-	newEpisodePath := filepath.Join(destPath, SeasonFolderName, episodeFilename)
-
-	if err := os.Rename(resp.Filename, newEpisodePath); err != nil {
-		fmt.Printf("Error moving episode to anime folder: %v\n", err)
-		return err
-	}
-
-	fmt.Printf("Episode %s of anime %s was downloaded to %s\n", episode, animeName, newEpisodePath)
+		fmt.Printf("Episode %s of anime %s was downloaded to %s\n", episode, animeName, destPath)
 	return nil
 }
 
@@ -130,9 +122,13 @@ func downloadAll(db *sql.DB, destPath string, anime Anime, epList []Episode) {
 		if err != nil {
 			log.Fatal("Failed to extract the api")
 		}
-
-		DownloadVideo(db, episodePath, videoURL, anime.Name, epList[i].Number)
-
+    
+    value, _ := strconv.Atoi(epList[i].Number)
+    if (value >= 0){
+		  DownloadVideo(db, episodePath, videoURL, anime.Name, epList[i].Number)
+    }else{
+      DownloadVideo(db, episodePath, videoURL, anime.Name, "0")
+    }
 		if err != nil {
 			log.Fatal("Failed to download episode")
 		}
