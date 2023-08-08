@@ -3,17 +3,16 @@ package downloadanime
 import (
 	"Animatic/utils"
 	"database/sql"
-  "encoding/json"
+	"encoding/json"
 	"fmt"
 	"io/ioutil"
 	"log"
 	"net/http"
 	"os"
 	"path/filepath"
-  "strconv"
 	"strings"
-	
-  "github.com/PuerkitoBio/goquery"
+
+	"github.com/PuerkitoBio/goquery"
 	"github.com/cavaliergopher/grab/v3"
 	"github.com/manifoldco/promptui"
 )
@@ -28,9 +27,9 @@ func DownloadVideo(db *sql.DB, destPath string, url string, animeName string, ep
 	if err != nil {
 		fmt.Printf("Error input animeInfo: %v\n", err)
 	}
-  
-  destPath = filepath.Join(destPath, episodeFilename)
-  fmt.Printf("Download the anime %s Episode %s\n", animeName, episode)
+
+	destPath = filepath.Join(destPath, episodeFilename)
+	fmt.Printf("Download the anime %s Episode %s\n", animeName, episode)
 
 	client := grab.NewClient()
 
@@ -45,18 +44,40 @@ func DownloadVideo(db *sql.DB, destPath string, url string, animeName string, ep
 		return err
 	}
 
-		fmt.Printf("Episode %s of anime %s was downloaded to %s\n", episode, animeName, destPath)
+	fmt.Printf("Episode %s of anime %s was downloaded to %s\n", episode, animeName, destPath)
 	return nil
 }
 
-func extractVideoUrl(url string) (string, error){
-  response, err := http.Get(url)
+func DownloadMovie(db *sql.DB, destPath string, url string, animeName string) error {
+	episodeFilename := fmt.Sprintf("%s.mp4", animeName)
 
-  if err != nil {
-    return "", err
-  }
+	destPath = filepath.Join(destPath, episodeFilename)
+	fmt.Printf("Download the movie %s\n", animeName)
 
-  doc, _ := goquery.NewDocumentFromReader(response.Body)
+	client := grab.NewClient()
+
+	req, _ := grab.NewRequest(destPath, url)
+	resp := client.Do(req)
+
+	// Wait for the download to complete
+	<-resp.Done
+
+	if err := resp.Err(); err != nil {
+		fmt.Printf("Error downloading episode: %v\n", err)
+		return err
+	}
+
+	fmt.Printf("Movie anime %s was downloaded to %s\n", animeName, destPath)
+	return nil
+}
+func extractVideoUrl(url string) (string, error) {
+	response, err := http.Get(url)
+
+	if err != nil {
+		return "", err
+	}
+
+	doc, _ := goquery.NewDocumentFromReader(response.Body)
 
 	videoElements := doc.Find("video")
 
@@ -107,10 +128,12 @@ func extractActualVideoURL(videoSrc string) (string, error) {
 func downloadAll(db *sql.DB, destPath string, anime Anime, epList []Episode) {
 	animeName := utils.TreatingAnimeName(anime.Name)
 	animeFolder := filepath.Join(destPath, animeName)
+	movieFolder := filepath.Join(destPath, "movies")
 
 	for i := range epList {
 		episodeNumber := utils.EpisodeFormatter(epList[i].Number)
 		episodePath := filepath.Join(animeFolder, fmt.Sprintf("S01E%s.mp4", episodeNumber))
+		moviePath := filepath.Join(movieFolder, animeName)
 
 		animeURL := epList[i].URL
 		videoURL, err := extractVideoUrl(animeURL)
@@ -122,13 +145,13 @@ func downloadAll(db *sql.DB, destPath string, anime Anime, epList []Episode) {
 		if err != nil {
 			log.Fatal("Failed to extract the api")
 		}
-    
-    value, _ := strconv.Atoi(epList[i].Number)
-    if (value >= 0){
-		  DownloadVideo(db, episodePath, videoURL, anime.Name, epList[i].Number)
-    }else{
-      DownloadVideo(db, episodePath, videoURL, anime.Name, "0")
-    }
+
+		listSize := len(epList)
+		if listSize >= 1 {
+			DownloadVideo(db, episodePath, videoURL, anime.Name, epList[i].Number)
+		} else {
+			DownloadMovie(db, moviePath, videoURL, anime.Name)
+		}
 		if err != nil {
 			log.Fatal("Failed to download episode")
 		}
@@ -216,10 +239,10 @@ func SelectAnime(db *sql.DB, animeName string) {
 	downloadAll(db, destPath, Anime{Name: animeSelectedName, URL: animeURL}, epList)
 }
 
-func searchAnime(animeName string) (string, string ,error){
-  currentPageUrl := fmt.Sprintf("%s/pesquisar/%s", BaseAnimeUrlPtBr, animeName)
+func searchAnime(animeName string) (string, string, error) {
+	currentPageUrl := fmt.Sprintf("%s/pesquisar/%s", BaseAnimeUrlPtBr, animeName)
 
-  for {
+	for {
 		response, err := http.Get(currentPageUrl)
 		if err != nil {
 			log.Fatalf("Failed to perform search request: %v\n", err)
@@ -265,4 +288,3 @@ func searchAnime(animeName string) (string, string ,error){
 		}
 	}
 }
-
