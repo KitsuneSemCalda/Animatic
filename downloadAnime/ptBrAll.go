@@ -5,12 +5,13 @@ import (
 	"database/sql"
 	"encoding/json"
 	"fmt"
-	"io/ioutil"
+	"io"
 	"log"
 	"net/http"
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"github.com/PuerkitoBio/goquery"
 	"github.com/cavaliergopher/grab/v3"
@@ -36,8 +37,26 @@ func DownloadVideo(db *sql.DB, destPath string, url string, animeName string, ep
 	req, _ := grab.NewRequest(destPath, url)
 	resp := client.Do(req)
 
-	// Wait for the download to complete
-	<-resp.Done
+	t := time.NewTicker(500 * time.Millisecond)
+	defer t.Stop()
+
+Loop:
+	for {
+		select {
+		case <-t.C:
+			fmt.Printf("%.2f%%\r",
+				100*resp.Progress())
+
+		case <-resp.Done:
+			// download is complete
+			break Loop
+		}
+	}
+
+	if err := resp.Err(); err != nil {
+		fmt.Fprintf(os.Stderr, "Download failed: %v\n", err)
+		os.Exit(1)
+	}
 
 	if err := resp.Err(); err != nil {
 		fmt.Printf("Error downloading episode: %v\n", err)
@@ -106,7 +125,7 @@ func extractActualVideoURL(videoSrc string) (string, error) {
 		return "", fmt.Errorf("request failed with status: %s", response.Status)
 	}
 
-	body, err := ioutil.ReadAll(response.Body)
+	body, err := io.ReadAll(response.Body)
 	if err != nil {
 		return "", err
 	}
