@@ -1,5 +1,8 @@
 # Animatic - AnimeFire Anime Downloader for Plex
 
+>[!CAUTION]
+> Now I working in a new repository: [Animatic-v2](https://github.com/KitsuneSemCalda/Animatic-v2)
+
 ## Overview
 
 Animatic is a Go-based application designed to download anime episodes from AnimeFire and prepare them for indexing in Plex. The purpose of Animatic is to simplify the process of obtaining anime content and making it easily accessible for Plex users to enjoy their favorite anime series.
