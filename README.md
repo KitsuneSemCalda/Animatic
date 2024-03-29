@@ -5,8 +5,11 @@
 # Animatic
 [![GitHub license](https://img.shields.io/github/license/KitsuneSemCalda/Animatic)](KitsuneSemCalda/Animatic/blob/master/LICENSE) ![GitHub stars](https://img.shields.io/github/stars/KitsuneSemCalda/Animatic) ![GitHub stars](https://img.shields.io/github/languages/count/KitsuneSemCalda/Animatic) ![GitHub stars](https://img.shields.io/github/languages/top/KitsuneSemCalda/Animatic) ![GitHub stars](https://img.shields.io/github/repo-size/KitsuneSemCalda/Animatic) ![GitHub stars](https://img.shields.io/github/languages/code-size/KitsuneSemCalda/Animatic)
 
-Animatic is a Go-based application designed to search and watch anime episodes from the web, as well as to provide the option to download them. It offers a command-line interface for users to input the name of the anime they wish to access or download. The project is particularly geared towards those who prefer interacting with the application through the terminal, making it a streamlined and efficient way to search for and view anime episodes for enthusiasts of the genre. Its main focus is on anime content with **Portuguese** dubbing and subtitles.
+Animatic is a Go-based application designed to search and watch anime episodes from the web via plex or jellyfin, as well as to provide the option to download them. It offers a command-line interface for users to input the name of the anime they wish to access or download. The project is particularly geared towards those who prefer interacting with the application through the terminal, making it a streamlined and efficient way to search for and view anime episodes for enthusiasts of the genre. Its main focus is on anime content with **Portuguese** dubbing and subtitles.
 
+>[!TIP]
+> If you prefer using you own computer to reproduce the animes we recommend use the [GoAnime](https://github.com/alvarorichard/GoAnime) instead Animatic.
+ 
 ## Features
 
 - Checks for internet connection at startup.
