@@ -1,6 +1,9 @@
 package structure
 
-import "errors"
+import (
+	"errors"
+	"net/url"
+)
 
 type Episode struct {
 	Number int
@@ -8,6 +11,8 @@ type Episode struct {
 }
 
 func IsValidEpisode(episode Episode) bool {
+	var err error
+
 	if episode.Number <= 0 {
 		return false
 	}
@@ -16,7 +21,9 @@ func IsValidEpisode(episode Episode) bool {
 		return false
 	}
 
-	return true
+	_, err = url.ParseRequestURI(episode.Url)
+
+	return err == nil
 }
 
 func NewEpisode(number int, url string) (*Episode, error) {
